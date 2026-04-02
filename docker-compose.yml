@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  jenkins:
+    image: jenkins/jenkins:lts
+    container_name: jenkins-lab
+    ports:
+      - "8080:8080"
+    volumes:
+      - jenkins_home:/var/jenkins_home
+    user: root
+
+  k6:
+    image: grafana/k6
+    container_name: k6-lab
+    volumes:
+      - ./k6:/scripts
+    entrypoint: ["k6", "run", "/scripts/script.js"]
+
+volumes:
+  jenkins_home:

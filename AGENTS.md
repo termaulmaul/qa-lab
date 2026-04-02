@@ -1,0 +1,12 @@
+These instructions apply to the entire repository unless a deeper `AGENTS.md` overrides them.
+- This repo currently contains a `docker-compose.yml` lab setup and a `k6` load-test script in `k6/script.js`.
+- Treat this as a small infrastructure/testing repo; keep changes minimal and easy to run locally.
+- Prefer targeted edits over broad refactors.
+- Preserve the existing Docker Compose and k6 structure unless the task explicitly asks for reorganization.
+- When updating load tests, keep script behavior clear and configurable rather than hardcoding environment-specific values when avoidable.
+- When adding new files, use descriptive names and keep them close to the feature they support.
+- For Docker Compose changes, validate with `docker compose config` when available.
+- For k6 script changes, prefer lightweight syntax or smoke validation before suggesting full load runs.
+- Do not add new tooling or dependencies unless the user asks for them.
+- Do not commit generated artifacts, local environment files, or editor/system cruft.
+- Keep `.gitignore` up to date when new local-only outputs are introduced.
