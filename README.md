@@ -1,7 +1,13 @@
+QA Lab: Belajar k6 + Jenkins untuk Interview QA
+================================================
 Repo ini untuk latihan interview QA Engineer, fokus di performance testing dan CI/CD.
+Fokus Belajar
+-------------
 - Performance testing dengan `k6`
 - CI/CD basic dengan `Jenkins`
 - Setup environment reproducible dengan `Docker Compose`
+Struktur Project
+----------------
 ```text
 qa-lab/
 ├── docker-compose.yml
@@ -10,6 +16,8 @@ qa-lab/
 ├── AGENTS.md
 └── README.md
 ```
+Prasyarat
+---------
 - Docker Desktop (atau Docker Engine + Compose)
 - Git
 Cek cepat:
@@ -18,6 +26,8 @@ docker --version
 docker compose version
 git --version
 ```
+Menjalankan Lab
+---------------
 Start services:
 ```bash
 docker compose up -d
@@ -34,11 +44,15 @@ docker exec jenkins-lab cat /var/jenkins_home/secrets/initialAdminPassword
 ```
 Saat setup awal Jenkins, pilih:
 - **Install suggested plugins**
+Menjalankan k6
+--------------
 Script default ada di `k6/script.js` dan mengetes `https://test.k6.io`.
 Run manual:
 ```bash
 docker run --rm -v $(pwd)/k6:/scripts grafana/k6 run /scripts/script.js
 ```
+Integrasi Jenkins Pipeline
+--------------------------
 Contoh pipeline sederhana:
 ```groovy
 pipeline {
@@ -52,11 +66,15 @@ pipeline {
   }
 }
 ```
+Roadmap Belajar Singkat
+-----------------------
 1. Fundamental QA: jenis testing, SDLC, mindset tester
 2. Web/API dasar: HTTP, REST, status code, Postman
 3. Performance testing: load vs stress, latency, throughput, RPS
 4. Jenkins CI/CD: konsep pipeline, stage, automation
 5. Mini project: k6 + Jenkins + Docker dengan dokumentasi jelas
+Mini Project untuk Portfolio
+----------------------------
 Tema:
 - **Performance Testing API dengan k6 + Jenkins + Docker**
 Checklist:
@@ -64,10 +82,14 @@ Checklist:
 - Jenkins pipeline untuk run test otomatis
 - Catatan hasil test dan analisis bottleneck
 - Opsional: Grafana/Prometheus
+Pertanyaan Interview Umum
+-------------------------
 - Apa beda load test vs stress test?
 - Metrik apa untuk menilai overload?
 - Kenapa CI/CD penting untuk quality?
 - Bagaimana test login API saat traffic tinggi?
+Troubleshooting
+---------------
 Lihat logs:
 ```bash
 docker compose logs
@@ -76,6 +98,8 @@ Reset environment:
 ```bash
 docker compose down -v
 ```
+Next Upgrade
+------------
 - Tambah dummy API (Express/FastAPI) sebagai target test
 - Tambah Grafana + Prometheus untuk visualisasi
 - Pisahkan test profile: smoke, load, stress
