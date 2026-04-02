@@ -1,21 +1,79 @@
-version: '3.8'
-
 services:
+  app:
+    build:
+      context: ./app
+    container_name: qa-app-lab
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+    networks:
+      - qa-lab-net
+
   jenkins:
-    image: jenkins/jenkins:lts
+    build:
+      context: ./jenkins
     container_name: jenkins-lab
     ports:
       - "8080:8080"
+      - "50000:50000"
     volumes:
       - jenkins_home:/var/jenkins_home
+      - ./:/workspace/qa-lab
+      - /var/run/docker.sock:/var/run/docker.sock
     user: root
+    restart: unless-stopped
+    depends_on:
+      - app
+      - influxdb
+    networks:
+      - qa-lab-net
+
+  influxdb:
+    image: influxdb:1.8
+    container_name: influxdb-lab
+    ports:
+      - "8086:8086"
+    environment:
+      INFLUXDB_DB: k6
+    volumes:
+      - influxdb_data:/var/lib/influxdb
+    restart: unless-stopped
+    networks:
+      - qa-lab-net
+
+  grafana:
+    image: grafana/grafana:11.1.0
+    container_name: grafana-lab
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin123
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    restart: unless-stopped
+    depends_on:
+      - influxdb
+    networks:
+      - qa-lab-net
 
   k6:
-    image: grafana/k6
+    image: grafana/k6:latest
     container_name: k6-lab
+    profiles:
+      - manual
     volumes:
-      - ./k6:/scripts
-    entrypoint: ["k6", "run", "/scripts/script.js"]
+      - ./k6:/scripts:ro
+    entrypoint: ["k6"]
+    networks:
+      - qa-lab-net
 
 volumes:
   jenkins_home:
+  influxdb_data:
+
+networks:
+  qa-lab-net:
+    name: qa-lab-net
