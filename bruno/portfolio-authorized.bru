@@ -1,0 +1,26 @@
+meta {
+  name: Portfolio Authorized
+  type: http
+  seq: 6
+}
+
+get {
+  url: http://localhost:8000/api/portfolio
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{authToken}}
+}
+
+tests {
+  test("portfolio returns 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("portfolio has positions", function() {
+    const body = res.getBody();
+    expect(body.positions.length).to.be.greaterThan(0);
+  });
+}

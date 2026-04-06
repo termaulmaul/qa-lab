@@ -3,138 +3,36 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>QA Lab Trading UI</title>
+    <title>QA Lab Trading UI - Login</title>
     <link rel="stylesheet" href="/ui/styles.css">
   </head>
-  <body>
-    <main class="shell">
-      <section class="hero">
-        <p class="eyebrow">QA Trading Desk</p>
-        <h1>Trading App UI Lab</h1>
-        <p class="subtitle">UI automation flow for login, market watch, portfolio polling, watchlist, order history, and order placement.</p>
-      </section>
-      <section class="panel" id="login-panel">
-        <div class="panel-head">
-          <h2>Login</h2>
-          <span class="badge" id="auth-status">Logged out</span>
-        </div>
-        <form id="login-form" class="stack">
-          <label>
-            Username
-            <input id="username" name="username" type="text" value="qa_user" autocomplete="username">
-          </label>
-          <label>
-            Password
-            <input id="password" name="password" type="password" value="qa_pass" autocomplete="current-password">
-          </label>
-          <button id="login-button" type="submit">Login</button>
-        </form>
-        <p class="message" id="login-message" aria-live="polite"></p>
-      </section>
-      <section class="grid">
-        <article class="panel">
-          <div class="panel-head">
-            <h2>Market Tickers</h2>
-            <button id="refresh-market" type="button" class="ghost">Refresh</button>
+  <body class="login-page">
+    <div id="login-view" class="view">
+      <main class="login-shell">
+        <section class="hero">
+          <p class="eyebrow">QA Trading Desk</p>
+          <h1>Trading App UI Lab</h1>
+          <p class="subtitle">UI automation flow for login, market watch, portfolio polling, watchlist, order history, and order placement.</p>
+        </section>
+        <section class="panel login-panel" id="login-panel">
+          <div class="panel-head" style="justify-content: center; border-bottom: none; margin-bottom: 10px;">
+            <h2>Welcome Back</h2>
           </div>
-          <table class="table" id="market-table">
-            <thead>
-              <tr>
-                <th>Symbol</th>
-                <th>Last</th>
-                <th>Change</th>
-                <th>Volume</th>
-              </tr>
-            </thead>
-            <tbody id="market-body"></tbody>
-          </table>
-        </article>
-        <article class="panel">
-          <div class="panel-head">
-            <h2>Portfolio Snapshot</h2>
-            <button id="refresh-portfolio" type="button" class="ghost">Refresh</button>
-          </div>
-          <p class="stat"><span>Buying Power</span><strong id="buying-power">-</strong></p>
-          <ul id="portfolio-list" class="list"></ul>
-        </article>
-      </section>
-      <section class="grid">
-        <article class="panel" id="watchlist-panel">
-          <div class="panel-head">
-            <h2>Watchlist</h2>
-            <button id="refresh-watchlist" type="button" class="ghost">Refresh</button>
-          </div>
-          <ul id="watchlist-list" class="list"></ul>
-          <p class="message" id="watchlist-message" aria-live="polite"></p>
-        </article>
-        <article class="panel" id="orders-panel">
-          <div class="panel-head">
-            <h2>Order History</h2>
-            <button id="refresh-orders" type="button" class="ghost">Refresh</button>
-          </div>
-          <div class="action-row">
-            <input id="order-lookup-id" type="text" placeholder="Order ID (e.g. TRX-ABC123)" aria-label="Order ID lookup">
-            <button id="lookup-order-button" type="button">Lookup Order</button>
-          </div>
-          <table class="table" id="orders-table">
-            <thead>
-              <tr>
-                <th>Order ID</th>
-                <th>Symbol</th>
-                <th>Side</th>
-                <th>Qty</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody id="orders-body"></tbody>
-          </table>
-          <p class="message" id="orders-message" aria-live="polite"></p>
-        </article>
-      </section>
-      <section class="panel">
-        <div class="panel-head">
-          <h2>Create Order</h2>
-          <span class="badge badge-neutral" id="market-state">Market unknown</span>
-        </div>
-        <form id="order-form" class="order-grid">
-          <label>
-            Symbol
-            <select id="symbol" name="symbol">
-              <option value="BBCA">BBCA</option>
-              <option value="BBRI">BBRI</option>
-              <option value="TLKM">TLKM</option>
-              <option value="ASII">ASII</option>
-              <option value="GOTO">GOTO</option>
-            </select>
-          </label>
-          <label>
-            Side
-            <select id="side" name="side">
-              <option value="BUY">BUY</option>
-              <option value="SELL">SELL</option>
-            </select>
-          </label>
-          <label>
-            Quantity
-            <input id="quantity" name="quantity" type="number" min="1" step="1" value="1">
-          </label>
-          <label>
-            Type
-            <select id="type" name="type">
-              <option value="MARKET">MARKET</option>
-              <option value="LIMIT">LIMIT</option>
-            </select>
-          </label>
-          <button id="place-order" type="submit">Place Order</button>
-        </form>
-        <p class="message" id="order-message" aria-live="polite"></p>
-        <div class="result-card" id="order-result" hidden>
-          <p><span>Order ID</span><strong id="order-id">-</strong></p>
-          <p><span>Status</span><strong id="order-status">-</strong></p>
-          <p><span>Filled Price</span><strong id="order-price">-</strong></p>
-        </div>
-      </section>
-    </main>
-    <script src="/ui/app.js"></script>
+          <form id="login-form" class="stack">
+            <label>
+              Username
+              <input id="username" name="username" type="text" value="qa_user" autocomplete="username">
+            </label>
+            <label>
+              Password
+              <input id="password" name="password" type="password" value="qa_pass" autocomplete="current-password">
+            </label>
+            <button id="login-button" type="submit">Login</button>
+          </form>
+          <p class="message" id="login-message" aria-live="polite"></p>
+        </section>
+      </main>
+    </div>
+    <script src="/ui/login.js"></script>
   </body>
 </html>

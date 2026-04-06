@@ -1,0 +1,41 @@
+meta {
+  name: Login Positive
+  type: http
+  seq: 2
+}
+
+post {
+  url: http://localhost:8000/api/login
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "username": "qa_user",
+    "password": "qa_pass"
+  }
+}
+
+script:post-response {
+  const body = res.getBody();
+  if (body && body.token) {
+    bru.setVar("authToken", body.token);
+  }
+}
+
+tests {
+  test("login returns 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("login returns auth token", function() {
+    const body = res.getBody();
+    expect(body.token).to.be.a("string");
+    expect(body.token.length).to.be.greaterThan(0);
+  });
+}

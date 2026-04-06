@@ -1,0 +1,32 @@
+meta {
+  name: Invalid Symbol Negative
+  type: http
+  seq: 9
+}
+
+post {
+  url: http://localhost:8000/api/orders
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{authToken}}
+}
+
+body:json {
+  {
+    "symbol": "INVALID-SYMBOL",
+    "side": "BUY",
+    "quantity": 1,
+    "type": "MARKET",
+    "clientOrderId": "bruno-invalid-symbol-{{$timestamp}}"
+  }
+}
+
+tests {
+  test("invalid symbol returns 404", function() {
+    expect(res.getStatus()).to.equal(404);
+  });
+}

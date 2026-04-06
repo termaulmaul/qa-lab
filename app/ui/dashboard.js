@@ -1,7 +1,12 @@
-let authToken = null;
-const loginForm = document.getElementById('login-form');
+const authToken = localStorage.getItem('authToken');
+const authUsername = localStorage.getItem('authUsername');
+
+if (!authToken) {
+  window.location.href = '/';
+}
+
+const logoutButton = document.getElementById('logout-button');
 const orderForm = document.getElementById('order-form');
-const loginMessage = document.getElementById('login-message');
 const orderMessage = document.getElementById('order-message');
 const watchlistMessage = document.getElementById('watchlist-message');
 const ordersMessage = document.getElementById('orders-message');
@@ -18,27 +23,33 @@ const orderStatus = document.getElementById('order-status');
 const orderPrice = document.getElementById('order-price');
 const orderLookupId = document.getElementById('order-lookup-id');
 const lookupOrderButton = document.getElementById('lookup-order-button');
+
+authStatus.textContent = authUsername ? `Logged in as ${authUsername}` : 'Logged in';
+
 function setMessage(node, text, tone) {
   node.textContent = text;
   node.className = `message${tone ? ` ${tone}` : ''}`;
 }
+
 function getAuthHeaders() {
   return authToken ? { Authorization: `Bearer ${authToken}` } : {};
 }
+
 async function requestJson(url, options = {}) {
   const response = await fetch(url, options);
   const body = await response.json();
   if (!response.ok) {
+    if (response.status === 401) {
+      // Token might be invalid or expired
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('authUsername');
+      window.location.href = '/';
+    }
     throw new Error(body.message || `Request failed with ${response.status}`);
   }
   return body;
 }
-function setLoggedOutViews() {
-  buyingPower.textContent = '-';
-  portfolioList.innerHTML = '';
-  watchlistList.innerHTML = '';
-  ordersBody.innerHTML = '';
-}
+
 function appendOrderRows(orders) {
   ordersBody.innerHTML = orders
     .map(
@@ -47,13 +58,14 @@ function appendOrderRows(orders) {
           <td>${item.orderId}</td>
           <td>${item.symbol}</td>
           <td>${item.side}</td>
-          <td>${item.quantity}</td>
+          <td class="text-right">${item.quantity}</td>
           <td>${item.status}</td>
         </tr>
       `
     )
     .join('');
 }
+
 async function loadMarket() {
   const payload = await requestJson('/api/market/tickers');
   marketStateBadge.textContent = `Market ${payload.marketStatus}`;
@@ -62,21 +74,16 @@ async function loadMarket() {
       (ticker) => `
         <tr>
           <td>${ticker.symbol}</td>
-          <td>${ticker.lastPrice}</td>
-          <td>${ticker.changePct}%</td>
-          <td>${ticker.volume.toLocaleString()}</td>
+          <td class="text-right">${ticker.lastPrice}</td>
+          <td class="text-right"><span style="color: ${ticker.changePct >= 0 ? 'var(--success)' : 'var(--danger)'}">${ticker.changePct > 0 ? '+' : ''}${ticker.changePct}%</span></td>
+          <td class="text-right">${ticker.volume.toLocaleString()}</td>
         </tr>
       `
     )
     .join('');
 }
+
 async function loadPortfolio() {
-  if (!authToken) {
-    setMessage(ordersMessage, '', '');
-    buyingPower.textContent = '-';
-    portfolioList.innerHTML = '';
-    return;
-  }
   const payload = await requestJson('/api/portfolio', {
     headers: getAuthHeaders(),
   });
@@ -86,18 +93,17 @@ async function loadPortfolio() {
       (position) => `
         <li>
           <span>${position.symbol}</span>
-          <strong>${position.quantity} @ ${position.avgPrice}</strong>
+          <div style="text-align: right;">
+            <strong>${position.quantity}</strong> 
+            <span style="opacity: 0.6; font-size: 0.85rem">@ ${position.avgPrice}</span>
+          </div>
         </li>
       `
     )
     .join('');
 }
+
 async function loadWatchlist() {
-  if (!authToken) {
-    watchlistList.innerHTML = '';
-    setMessage(watchlistMessage, 'Login first to view watchlist', 'error');
-    return;
-  }
   const payload = await requestJson('/api/watchlist', {
     headers: getAuthHeaders(),
   });
@@ -106,30 +112,26 @@ async function loadWatchlist() {
       (ticker) => `
         <li>
           <span>${ticker.symbol}</span>
-          <strong>${ticker.lastPrice} (${ticker.changePct}%)</strong>
+          <div style="text-align: right;">
+            <strong>${ticker.lastPrice}</strong> 
+            <span style="color: ${ticker.changePct >= 0 ? 'var(--success)' : 'var(--danger)'}; font-size: 0.85rem; margin-left: 8px;">${ticker.changePct > 0 ? '+' : ''}${ticker.changePct}%</span>
+          </div>
         </li>
       `
     )
     .join('');
   setMessage(watchlistMessage, `Loaded ${payload.symbols.length} symbols`, 'success');
 }
+
 async function loadOrders() {
-  if (!authToken) {
-    ordersBody.innerHTML = '';
-    setMessage(ordersMessage, 'Login first to view order history', 'error');
-    return;
-  }
   const payload = await requestJson('/api/orders', {
     headers: getAuthHeaders(),
   });
   appendOrderRows(payload.orders);
   setMessage(ordersMessage, `Loaded ${payload.orders.length} orders`, 'success');
 }
+
 async function lookupOrder() {
-  if (!authToken) {
-    setMessage(ordersMessage, 'Login first to lookup order', 'error');
-    return;
-  }
   const orderIdValue = orderLookupId.value.trim();
   if (!orderIdValue) {
     setMessage(ordersMessage, 'Order ID is required', 'error');
@@ -141,35 +143,15 @@ async function lookupOrder() {
   appendOrderRows([payload]);
   setMessage(ordersMessage, `Order ${payload.orderId} found`, 'success');
 }
-loginForm.addEventListener('submit', async (event) => {
-  event.preventDefault();
-  const formData = new FormData(loginForm);
-  try {
-    const payload = await requestJson('/api/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        username: formData.get('username'),
-        password: formData.get('password'),
-      }),
-    });
-    authToken = payload.token;
-    authStatus.textContent = `Logged in as ${payload.user.username}`;
-    setMessage(loginMessage, 'Login successful', 'success');
-    await Promise.all([loadPortfolio(), loadWatchlist(), loadOrders()]);
-  } catch (error) {
-    authToken = null;
-    authStatus.textContent = 'Logged out';
-    setLoggedOutViews();
-    setMessage(loginMessage, error.message, 'error');
-  }
+
+logoutButton.addEventListener('click', () => {
+  localStorage.removeItem('authToken');
+  localStorage.removeItem('authUsername');
+  window.location.href = '/';
 });
+
 orderForm.addEventListener('submit', async (event) => {
   event.preventDefault();
-  if (!authToken) {
-    setMessage(orderMessage, 'Login first before placing an order', 'error');
-    return;
-  }
   const formData = new FormData(orderForm);
   try {
     const payload = await requestJson('/api/orders', {
@@ -197,20 +179,26 @@ orderForm.addEventListener('submit', async (event) => {
     setMessage(orderMessage, error.message, 'error');
   }
 });
+
 document.getElementById('refresh-market').addEventListener('click', () => {
   loadMarket().catch((error) => setMessage(orderMessage, error.message, 'error'));
 });
+
 document.getElementById('refresh-portfolio').addEventListener('click', () => {
   loadPortfolio().catch((error) => setMessage(orderMessage, error.message, 'error'));
 });
+
 document.getElementById('refresh-watchlist').addEventListener('click', () => {
   loadWatchlist().catch((error) => setMessage(watchlistMessage, error.message, 'error'));
 });
+
 document.getElementById('refresh-orders').addEventListener('click', () => {
   loadOrders().catch((error) => setMessage(ordersMessage, error.message, 'error'));
 });
+
 lookupOrderButton.addEventListener('click', () => {
   lookupOrder().catch((error) => setMessage(ordersMessage, error.message, 'error'));
 });
-setLoggedOutViews();
-loadMarket().catch((error) => setMessage(orderMessage, error.message, 'error'));
+
+// Initial load
+Promise.all([loadMarket(), loadPortfolio(), loadWatchlist(), loadOrders()]).catch(console.error);

@@ -1,0 +1,28 @@
+meta {
+  name: Login Negative
+  type: http
+  seq: 3
+}
+
+post {
+  url: http://localhost:8000/api/login
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "username": "qa_user",
+    "password": "wrong-pass"
+  }
+}
+
+tests {
+  test("invalid login returns 401", function() {
+    expect(res.getStatus()).to.equal(401);
+  });
+}

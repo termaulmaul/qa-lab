@@ -1,0 +1,9 @@
+{
+  "version": "1",
+  "name": "QA Lab Trading API",
+  "type": "collection",
+  "ignore": [
+    "node_modules",
+    ".git"
+  ]
+}

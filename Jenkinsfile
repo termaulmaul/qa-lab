@@ -20,6 +20,15 @@ pipeline {
     string(name: 'NEGATIVE_ORDER_QUANTITY', defaultValue: '9999999', description: 'Negative UI quantity for insufficient buying power check')
     string(name: 'INFLUX_URL', defaultValue: 'http://influxdb:8086/k6', description: 'InfluxDB output URL')
     string(name: 'INFLUX_WRITE_URL', defaultValue: 'http://influxdb:8086/write?db=k6', description: 'InfluxDB write endpoint for Jenkins build trend metrics')
+    booleanParam(name: 'RUN_REGRESSION_LOOP', defaultValue: false, description: 'Run repeated regression loop stage after stress test')
+    string(name: 'REGRESSION_ITERATIONS', defaultValue: '2', description: 'Regression loop iteration count')
+    string(name: 'REGRESSION_INTERVAL_SECONDS', defaultValue: '5', description: 'Delay between regression iterations in seconds')
+    booleanParam(name: 'REGRESSION_STOP_ON_FAILURE', defaultValue: true, description: 'Stop regression loop immediately on failure')
+    booleanParam(name: 'REGRESSION_RUN_API', defaultValue: true, description: 'Include API regression in loop')
+    booleanParam(name: 'REGRESSION_RUN_UI', defaultValue: true, description: 'Include UI smoke in loop')
+    booleanParam(name: 'REGRESSION_RUN_PERF', defaultValue: true, description: 'Include k6 regression in loop')
+    string(name: 'REGRESSION_PERF_PROFILE', defaultValue: 'smoke', description: 'k6 profile for regression loop')
+    string(name: 'REGRESSION_PERF_DURATION', defaultValue: '10s', description: 'k6 duration for regression loop')
     string(name: 'SMOKE_DURATION', defaultValue: '15s', description: 'Smoke test duration')
     string(name: 'LOAD_DURATION', defaultValue: '30s', description: 'Load test duration')
     string(name: 'LOAD_MARKET_RATE', defaultValue: '30', description: 'Load market rate per second')
@@ -181,6 +190,39 @@ pipeline {
         '''
       }
     }
+
+    stage('Regression Loop') {
+      when {
+        expression { return params.RUN_REGRESSION_LOOP }
+      }
+      steps {
+        sh '''
+          chmod +x /workspace/qa-lab/scripts/run_regression_automation.sh
+          rm -rf "$WORKSPACE/reports/regression-loop"
+          mkdir -p "$WORKSPACE/reports/regression-loop"
+          TARGET_URL="$TARGET_URL" \
+          ITERATION_SLEEP="$ITERATION_SLEEP" \
+          LOGIN_USERNAME="$LOGIN_USERNAME" \
+          LOGIN_PASSWORD="$LOGIN_PASSWORD" \
+          SYMBOL="$SYMBOL" \
+          ORDER_QUANTITY="$ORDER_QUANTITY" \
+          INFLUX_URL="$INFLUX_URL" \
+          HOST_REPO_PATH="$HOST_REPO_PATH" \
+          RESULT_ROOT="$WORKSPACE/reports/regression-loop" \
+          ITERATIONS="$REGRESSION_ITERATIONS" \
+          INTERVAL_SECONDS="$REGRESSION_INTERVAL_SECONDS" \
+          STOP_ON_FAILURE="$REGRESSION_STOP_ON_FAILURE" \
+          RUN_API="$REGRESSION_RUN_API" \
+          RUN_UI="$REGRESSION_RUN_UI" \
+          RUN_PERF="$REGRESSION_RUN_PERF" \
+          PERF_PROFILE="$REGRESSION_PERF_PROFILE" \
+          PERF_DURATION="$REGRESSION_PERF_DURATION" \
+          K6_INFLUXDB_PUSH_INTERVAL="5s" \
+          K6_INFLUXDB_CONCURRENT_WRITES="4" \
+          bash /workspace/qa-lab/scripts/run_regression_automation.sh
+        '''
+      }
+    }
   }
 
   post {
@@ -234,6 +276,9 @@ pipeline {
         }
         if (fileExists('reports/k6-stress.log')) {
           summary << 'perf:stress'
+        }
+        if (fileExists('reports/regression-loop')) {
+          summary << 'regression:loop'
         }
         currentBuild.description = summary.join(' | ')
       }

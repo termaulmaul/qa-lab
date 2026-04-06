@@ -1,0 +1,17 @@
+meta {
+  name: Portfolio Unauthorized
+  type: http
+  seq: 5
+}
+
+get {
+  url: http://localhost:8000/api/portfolio
+  body: none
+  auth: none
+}
+
+tests {
+  test("portfolio unauthorized returns 401", function() {
+    expect(res.getStatus()).to.equal(401);
+  });
+}

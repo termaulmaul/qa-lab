@@ -1,0 +1,26 @@
+meta {
+  name: Get Order Detail
+  type: http
+  seq: 8
+}
+
+get {
+  url: http://localhost:8000/api/orders/{{orderId}}
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{authToken}}
+}
+
+tests {
+  test("order detail returns 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("order detail matches created order", function() {
+    const body = res.getBody();
+    expect(body.id).to.equal(bru.getVar("orderId"));
+  });
+}

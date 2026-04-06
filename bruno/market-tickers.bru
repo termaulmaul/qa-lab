@@ -1,0 +1,22 @@
+meta {
+  name: Market Tickers
+  type: http
+  seq: 4
+}
+
+get {
+  url: http://localhost:8000/api/market/tickers
+  body: none
+  auth: none
+}
+
+tests {
+  test("tickers returns 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("tickers have at least 3 symbols", function() {
+    const body = res.getBody();
+    expect(body.tickers.length).to.be.at.least(3);
+  });
+}

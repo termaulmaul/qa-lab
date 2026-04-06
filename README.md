@@ -3,6 +3,7 @@ QA Lab: Belajar k6 + Jenkins + InfluxDB + Grafana untuk Trading App 24/7
 
 Repo ini disiapkan sebagai lab kecil untuk belajar:
 
+- API testing manual/collection dengan `Bruno`
 - frontend/UI automation dengan `Playwright`
 - functional API automation dengan `Postman/Newman`
 - automation/performance testing dengan `k6`
@@ -61,7 +62,13 @@ qa-lab/
 ├── app/
 │   ├── Dockerfile
 │   └── server.py
+├── bruno/
+│   ├── bruno.json
+│   ├── collection.bru
+│   └── environments/
+│       └── local.bru
 ├── docs/
+│   ├── obsidian/
 │   └── qa-test-matrix.md
 ├── docker-compose.yml
 ├── grafana/
@@ -76,7 +83,8 @@ qa-lab/
 │   └── trading-api.postman_collection.json
 ├── scripts/
 │   ├── run_api_functional.sh
-│   └── run_k6_profiles.sh
+│   ├── run_k6_profiles.sh
+│   └── run_regression_automation.sh
 ├── AGENTS.md
 └── README.md
 ```
@@ -85,6 +93,7 @@ Komponen Lab
 ------------
 
 - `App`: dummy API lokal untuk simulasi login, market ticker, order book, portfolio, dan order placement
+- `Bruno`: koleksi request API untuk manual API testing
 - `Newman`: functional API regression suite
 - `Playwright`: UI smoke automation untuk trading dashboard
 - `Jenkins`: menjalankan pipeline automation
@@ -155,6 +164,27 @@ docker --version
 docker compose version
 git --version
 ```
+
+Dokumentasi Obsidian
+--------------------
+
+Repo ini sekarang punya catatan markdown yang lebih enak dibuka dari Obsidian di folder [`docs/obsidian`](/Users/maul/github/qa-lab/docs/obsidian).
+
+Mulai dari note utama:
+
+- [QA Lab Home](/Users/maul/github/qa-lab/docs/obsidian/QA%20Lab%20Home.md)
+
+Catatan pendukung:
+
+- [Lab Architecture](/Users/maul/github/qa-lab/docs/obsidian/Lab%20Architecture.md)
+- [Test Strategy](/Users/maul/github/qa-lab/docs/obsidian/Test%20Strategy.md)
+- [Runbook](/Users/maul/github/qa-lab/docs/obsidian/Runbook.md)
+
+Kalau mau dipakai di Obsidian:
+
+1. buka Obsidian
+2. pilih `Open folder as vault`
+3. arahkan ke `/Users/maul/github/qa-lab/docs/obsidian`
 
 Quick Start
 -----------
@@ -327,6 +357,38 @@ sed -n '1,220p' docs/qa-test-matrix.md
 Menjalankan Functional API Automation
 -------------------------------------
 
+Kalau kamu mau test API secara manual lewat Bruno, koleksinya ada di:
+
+- [`bruno/bruno.json`](/Users/maul/github/qa-lab/bruno/bruno.json)
+- [`bruno/collection.bru`](/Users/maul/github/qa-lab/bruno/collection.bru)
+- [`bruno/environments/local.bru`](/Users/maul/github/qa-lab/bruno/environments/local.bru)
+
+Request Bruno yang sudah disediakan:
+
+1. `Health Check`
+2. `Login Positive`
+3. `Login Negative`
+4. `Market Tickers`
+5. `Portfolio Unauthorized`
+6. `Portfolio Authorized`
+7. `Create Order Positive`
+8. `Get Order Detail`
+9. `Invalid Symbol Negative`
+10. `Duplicate Client Order Negative`
+
+Cara pakai di Bruno:
+
+1. buka Bruno
+2. pilih `Open Collection`
+3. arahkan ke folder `/Users/maul/github/qa-lab/bruno`
+4. langsung jalankan request
+5. untuk request yang butuh token, jalankan `Login Positive` dulu supaya `authToken` terisi otomatis
+
+Catatan:
+
+- request Bruno sekarang sudah memakai URL literal `http://localhost:8000`
+- jadi tidak perlu input `baseUrl` manual dulu
+
 Functional regression suite sekarang ada di:
 
 - [`postman/trading-api.postman_collection.json`](/Users/maul/github/qa-lab/postman/trading-api.postman_collection.json)
@@ -409,6 +471,65 @@ Artifact UI:
 - `output/playwright/negative/ui-negative-result.png`
 - `output/playwright/negative/ui-negative.webm`
 - `output/playwright/negative/trace.zip`
+
+Menjalankan Regression Automation Berulang
+------------------------------------------
+
+Kalau kamu ingin suite yang sudah stabil dijalankan terus secara iteratif, pakai:
+
+- [`scripts/run_regression_automation.sh`](/Users/maul/github/qa-lab/scripts/run_regression_automation.sh)
+
+Runner ini akan menggabungkan:
+
+1. functional API regression
+2. UI smoke automation
+3. k6 smoke regression
+
+Default behavior:
+
+- jalan `3` iterasi
+- jeda `10` detik antar iterasi
+- berhenti saat ada failure
+- menyimpan log per iterasi ke `reports/regression/<timestamp>/`
+
+Contoh run default:
+
+```bash
+cd /Users/maul/github/qa-lab
+chmod +x scripts/run_regression_automation.sh
+./scripts/run_regression_automation.sh
+```
+
+Contoh `5` iterasi dengan jeda `30` detik:
+
+```bash
+ITERATIONS=5 INTERVAL_SECONDS=30 ./scripts/run_regression_automation.sh
+```
+
+Contoh hanya API + k6 tanpa UI:
+
+```bash
+RUN_UI=false ./scripts/run_regression_automation.sh
+```
+
+Contoh tetap lanjut walau ada failure:
+
+```bash
+STOP_ON_FAILURE=false ./scripts/run_regression_automation.sh
+```
+
+Contoh ganti profile performance:
+
+```bash
+RUN_PERF=true PERF_PROFILE=smoke PERF_DURATION=30s ./scripts/run_regression_automation.sh
+```
+
+Output utamanya:
+
+- `reports/regression/<timestamp>/summary.log`
+- `reports/regression/<timestamp>/iter-1-api.log`
+- `reports/regression/<timestamp>/iter-1-ui.log`
+- `reports/regression/<timestamp>/iter-1-perf.log`
 
 Menjalankan k6 Secara Manual
 ----------------------------
@@ -748,7 +869,7 @@ Repo ini sudah punya [`Jenkinsfile`](./Jenkinsfile) multi-stage.
 Pipeline tersebut melakukan:
 
 - validasi Docker bisa dipanggil dari Jenkins
-- menjalankan `Functional API -> UI Automation (Smoke + Negative) -> Smoke -> Load -> Stress`
+- menjalankan `Functional API -> UI Automation (Smoke + Negative) -> Smoke -> Load -> Stress -> Regression Loop (optional)`
 - mengirim hasil test ke InfluxDB
 - menyimpan artifact report ke folder `reports/`
 - menyimpan screenshot/video/trace UI ke folder `output/playwright/`
@@ -784,6 +905,11 @@ LOGIN_PASSWORD=qa_pass
 SYMBOL=BBCA
 ORDER_QUANTITY=1
 INFLUX_URL=http://influxdb:8086/k6
+RUN_REGRESSION_LOOP=false
+REGRESSION_ITERATIONS=2
+REGRESSION_INTERVAL_SECONDS=5
+REGRESSION_PERF_PROFILE=smoke
+REGRESSION_PERF_DURATION=10s
 ```
 
 Artifact yang dihasilkan pipeline:
@@ -795,6 +921,7 @@ Artifact yang dihasilkan pipeline:
 - `reports/k6-smoke.log`
 - `reports/k6-load.log`
 - `reports/k6-stress.log`
+- `reports/regression-loop/**`
 
 Contoh kalau mau target internal API di Docker network yang sama:
 

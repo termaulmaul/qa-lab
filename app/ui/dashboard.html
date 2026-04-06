@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>QA Lab Trading UI - Dashboard</title>
+    <link rel="stylesheet" href="/ui/styles.css">
+  </head>
+  <body class="dashboard-page">
+    <div id="dashboard-view" class="view">
+      <header class="top-nav">
+        <div class="nav-brand">
+          QA Trading Desk <span class="badge badge-neutral" id="market-state">Market unknown</span>
+        </div>
+        <div class="nav-user">
+          <span class="badge" id="auth-status">Logged in</span>
+          <button id="logout-button" class="ghost small">Logout</button>
+        </div>
+      </header>
+
+      <main class="dashboard-shell">
+        <div class="dashboard-grid">
+          <!-- LEFT COLUMN -->
+          <div class="sidebar">
+            <article class="panel">
+              <div class="panel-head">
+                <h2>Market Tickers</h2>
+                <button id="refresh-market" type="button" class="ghost icon-btn" aria-label="Refresh Market">↻</button>
+              </div>
+              <table class="table" id="market-table">
+                <thead>
+                  <tr>
+                    <th>Symbol</th>
+                    <th class="text-right">Last</th>
+                    <th class="text-right">Change</th>
+                    <th class="text-right">Vol</th>
+                  </tr>
+                </thead>
+                <tbody id="market-body"></tbody>
+              </table>
+            </article>
+
+            <article class="panel" id="watchlist-panel">
+              <div class="panel-head">
+                <h2>Watchlist</h2>
+                <button id="refresh-watchlist" type="button" class="ghost icon-btn" aria-label="Refresh Watchlist">↻</button>
+              </div>
+              <ul id="watchlist-list" class="list"></ul>
+              <p class="message" id="watchlist-message" aria-live="polite"></p>
+            </article>
+
+            <section class="panel">
+              <div class="panel-head">
+                <h2>Create Order</h2>
+              </div>
+              <form id="order-form" class="stack">
+                <div class="form-row">
+                  <label>
+                    Symbol
+                    <select id="symbol" name="symbol">
+                      <option value="BBCA">BBCA</option>
+                      <option value="BBRI">BBRI</option>
+                      <option value="TLKM">TLKM</option>
+                      <option value="ASII">ASII</option>
+                      <option value="GOTO">GOTO</option>
+                    </select>
+                  </label>
+                  <label>
+                    Side
+                    <select id="side" name="side">
+                      <option value="BUY">BUY</option>
+                      <option value="SELL">SELL</option>
+                    </select>
+                  </label>
+                </div>
+                <div class="form-row">
+                  <label>
+                    Quantity
+                    <input id="quantity" name="quantity" type="number" min="1" step="1" value="1">
+                  </label>
+                  <label>
+                    Type
+                    <select id="type" name="type">
+                      <option value="MARKET">MARKET</option>
+                      <option value="LIMIT">LIMIT</option>
+                    </select>
+                  </label>
+                </div>
+                <button id="place-order" type="submit">Place Order</button>
+              </form>
+              <p class="message" id="order-message" aria-live="polite"></p>
+              <div class="result-card" id="order-result" hidden>
+                <p><span>Order ID</span><strong id="order-id">-</strong></p>
+                <p><span>Status</span><strong id="order-status">-</strong></p>
+                <p><span>Filled Price</span><strong id="order-price">-</strong></p>
+              </div>
+            </section>
+          </div>
+
+          <!-- RIGHT COLUMN -->
+          <div class="main-content">
+            <article class="panel">
+              <div class="panel-head">
+                <h2>Portfolio Snapshot</h2>
+                <button id="refresh-portfolio" type="button" class="ghost icon-btn" aria-label="Refresh Portfolio">↻</button>
+              </div>
+              <p class="stat"><span>Buying Power</span><strong id="buying-power">-</strong></p>
+              <ul id="portfolio-list" class="list"></ul>
+            </article>
+
+            <article class="panel" id="orders-panel">
+              <div class="panel-head">
+                <h2>Order History</h2>
+                <button id="refresh-orders" type="button" class="ghost icon-btn" aria-label="Refresh Orders">↻</button>
+              </div>
+              <div class="action-row">
+                <input id="order-lookup-id" type="text" placeholder="Order ID (e.g. TRX-ABC123)" aria-label="Order ID lookup">
+                <button id="lookup-order-button" type="button">Lookup Order</button>
+              </div>
+              <div class="table-container">
+                <table class="table" id="orders-table">
+                  <thead>
+                    <tr>
+                      <th>Order ID</th>
+                      <th>Symbol</th>
+                      <th>Side</th>
+                      <th class="text-right">Qty</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody id="orders-body"></tbody>
+                </table>
+              </div>
+              <p class="message" id="orders-message" aria-live="polite"></p>
+            </article>
+          </div>
+        </div>
+      </main>
+    </div>
+    <script src="/ui/dashboard.js"></script>
+  </body>
+</html>
