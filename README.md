@@ -27,6 +27,26 @@ Sekarang lab ini dimodelkan seperti aplikasi trading atau stock app yang hidup t
 
 Flow itu dijalankan oleh `k6` untuk non-functional testing dan `Newman` untuk functional API regression. Hasil metrik performance dikirim ke InfluxDB. Jenkins dipakai untuk eksekusi otomatis seperti QA pipeline.
 
+Flow Lab QA Automation
+----------------------
+
+```mermaid
+flowchart TD
+    A["Trading App API + UI"] --> B["Functional API Automation (Postman/Newman)"]
+    A --> C["UI Automation (Playwright in Docker)"]
+    A --> D["Performance Testing (k6 in Docker)"]
+    D --> E["InfluxDB"]
+    E --> F["Grafana Dashboard"]
+    G["Prometheus"] --> F
+    H["cAdvisor"] --> G
+    B --> I["Jenkins Pipeline"]
+    C --> I
+    D --> I
+    I --> J["Artifacts: Report, Screenshot, Video, Trace"]
+    I --> K["QA Validation Result"]
+    F --> K
+```
+
 Catatan penting:
 
 - `1 juta user` tidak realistis dijalankan sebagai `1 juta VU` di laptop Docker lokal.
@@ -71,6 +91,8 @@ Komponen Lab
 - `k6`: menjalankan load test
 - `InfluxDB 1.8`: menyimpan metrik hasil `k6`
 - `Grafana`: menampilkan dashboard hasil test dan export panel/dashboard
+- `Prometheus`: scrape metrik runtime container Docker
+- `cAdvisor`: expose metrik CPU dan memory container untuk Grafana
 
 Endpoint Trading yang Disimulasikan
 -----------------------------------
@@ -99,7 +121,25 @@ Kenapa pakai Grafana?
 - lebih mudah membaca trend daripada output terminal `k6`
 - cocok untuk membandingkan `smoke`, `load`, `stress`, `spike`, dan `market_open_chaos`
 - bisa dipakai QA untuk korelasi latency, error rate, throughput, dan VU dalam satu dashboard
+- bisa dipakai QA untuk korelasi latency, error rate, throughput, transaction rate, CPU, dan memory dalam satu dashboard
 - panel dan dashboard bisa diexport ke JSON atau image dari UI Grafana
+
+KPI Grafana yang Dipakai
+------------------------
+
+Dashboard utama sekarang mengikuti KPI ini:
+
+- `RPS Overall`
+- `TPS Overall`
+- `Avg. Resp Time (API) ≤ 200 ms`
+- `Overall Error Rate < 0.1%`
+- `CPU Utilization < 50%`
+- `Memory Utilization < 60%`
+
+Sumber data:
+
+- `InfluxDB`: `RPS Overall`, `TPS Overall`, `Avg. Resp Time (API)`, `Overall Error Rate`
+- `Prometheus + cAdvisor`: `CPU Utilization`, `Memory Utilization`
 
 Prasyarat
 ---------
@@ -156,6 +196,18 @@ Kalau sehat, biasanya responnya `204 No Content`.
 
 ```bash
 curl http://localhost:3000/api/health
+```
+
+6a. Cek Prometheus siap:
+
+```bash
+curl http://localhost:9090/-/healthy
+```
+
+6b. Cek cAdvisor siap:
+
+```bash
+curl http://localhost:8081/healthz
 ```
 
 7. Cek dummy app siap:
@@ -228,6 +280,18 @@ Lihat log Grafana:
 
 ```bash
 docker compose logs -f grafana
+```
+
+Lihat log Prometheus:
+
+```bash
+docker compose logs -f prometheus
+```
+
+Lihat log cAdvisor:
+
+```bash
+docker compose logs -f cadvisor
 ```
 
 Lihat log dummy app:
@@ -544,6 +608,7 @@ Service Grafana sekarang ikut jalan di Docker Compose dan sudah otomatis diprovi
 - username: `admin`
 - password: `admin123`
 - datasource default: `InfluxDB-k6`
+- datasource tambahan: `Prometheus-Docker`
 - dashboard default: `QA Lab - k6 Trading Overview`
 - dashboard tambahan: `QA Jenkins UI Build Trend`
 
@@ -566,24 +631,29 @@ Untuk QA automation performance, korelasi yang biasanya dilihat bukan cuma satu 
 
 Yang utama:
 
-1. `Latency`
-   lihat `http_req_duration` terutama `p95` dan `avg`
-2. `Error Rate`
-   lihat `http_req_failed`
-3. `Throughput`
+1. `RPS Overall`
    lihat `http_reqs`
-4. `Concurrency`
+2. `TPS Overall`
+   lihat `trading_transactions`
+3. `Latency`
+   lihat `http_req_duration` terutama `avg` dan `p95`
+4. `Error Rate`
+   lihat `http_req_failed`
+5. `Resource Utilization`
+   lihat `CPU Utilization` dan `Memory Utilization`
+6. `Concurrency`
    lihat `vus`
-5. `Scenario behavior`
+7. `Scenario behavior`
    bandingkan run `smoke`, `load`, `stress`, `spike`, `market_open_chaos`, `soak`
 
 Korelasi yang umum dipakai:
 
-1. `Latency naik` saat `http_reqs` dan `vus` naik
-2. `Error rate` mulai naik setelah throughput tertentu
-3. `Stress` dan `market_open_chaos` dipakai untuk cari titik jebol
-4. `Soak` dipakai untuk lihat apakah latency memburuk perlahan walau beban tetap
-5. warning `flush operation took higher than expected push interval` biasanya menandakan laptop lokal, InfluxDB, atau target app sudah tidak sustain di rate itu
+1. `RPS` naik tapi `TPS` tidak ikut naik biasanya berarti read traffic tinggi tapi transaksi bisnis tidak bertambah
+2. `Latency naik` saat `RPS`, `TPS`, dan `vus` naik
+3. `Error rate` mulai naik setelah throughput atau transaction rate tertentu
+4. `CPU` dan `Memory` ikut naik saat `stress` atau `market_open_chaos`, ini dipakai untuk cari bottleneck container
+5. `Soak` dipakai untuk lihat apakah latency, memory, atau error rate memburuk perlahan walau beban tetap
+6. warning `flush operation took higher than expected push interval` biasanya menandakan laptop lokal, InfluxDB, atau target app sudah tidak sustain di rate itu
 
 Kalau kamu lihat warning seperti:
 

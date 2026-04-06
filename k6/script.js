@@ -1,5 +1,6 @@
 import http from 'k6/http';
 import { check, group, sleep } from 'k6';
+import { Counter } from 'k6/metrics';
 
 const targetUrl = __ENV.TARGET_URL || 'http://app:8000';
 const username = __ENV.LOGIN_USERNAME || 'qa_user';
@@ -17,6 +18,7 @@ const expected401 = http.expectedStatuses(401);
 const expected404 = http.expectedStatuses(404);
 const expected400 = http.expectedStatuses(400);
 const expected422 = http.expectedStatuses(422);
+const tradingTransactions = new Counter('trading_transactions');
 
 function buildScenarios(profile) {
   const profiles = {
@@ -404,6 +406,9 @@ export function tradingFlowScenario() {
       'order create has id': (res) => Boolean(res.json('orderId')),
       'order create filled': (res) => res.json('status') === 'FILLED',
     });
+    if (createOrder.status === 201) {
+      tradingTransactions.add(1, { flow: 'order_create', product: 'trading-lab' });
+    }
 
     const orderId = createOrder.json('orderId');
 

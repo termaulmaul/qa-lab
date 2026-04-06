@@ -56,6 +56,38 @@ services:
     restart: unless-stopped
     depends_on:
       - influxdb
+      - prometheus
+    networks:
+      - qa-lab-net
+
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    container_name: prometheus-lab
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    restart: unless-stopped
+    depends_on:
+      - cadvisor
+    networks:
+      - qa-lab-net
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.49.1
+    container_name: cadvisor-lab
+    ports:
+      - "8081:8080"
+    privileged: true
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker:/var/lib/docker:ro
+      - /dev/disk:/dev/disk:ro
+    devices:
+      - /dev/kmsg
+    restart: unless-stopped
     networks:
       - qa-lab-net
 
